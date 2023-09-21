@@ -5,39 +5,47 @@ const express = require('express');
 const { graphqlHTTP } = require('express-graphql');
 const graphqlSchema = require('../graphql/schema');
 const graphqlResolver = require('../graphql/resolvers');
-
 const chai = require('chai');
-const { describe, it, before, after } = require('mocha');
+const { describe, it, before, after, beforeEach, afterEach } = require('mocha');
 const expect = chai.expect;
-
-const {methodCodes} = require('../models/methodCodes')
+const { methodCodes } = require('../models/methodCodes');
 
 let mongoServer;
 let app;
 
-beforeEach(async () => {
+async function connectToMongoDB() {
   mongoServer = new MongoMemoryServer();
   const mongoUri = await mongoServer.getUri();
+  await mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true });
+}
 
-  await mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then(result => {
-      app = express();
-      app.use(
-        '/graphql',
-        graphqlHTTP({
-          schema: graphqlSchema,
-          rootValue: graphqlResolver,
-          graphiql: true,
-        })
-      );
-    });
-  
-  
+async function closeMongoDBConnection() {
+  await mongoose.disconnect();
+  await mongoServer.stop();
+}
+
+async function sendGraphQLRequest(query) {
+  return request(app)
+    .post('/graphql')
+    .send({ query })
+    .set('Content-Type', 'application/json');
+}
+
+beforeEach(async () => {
+  await connectToMongoDB();
+  app = express();
+  app.use(
+    '/graphql',
+    graphqlHTTP({
+      schema: graphqlSchema,
+      rootValue: graphqlResolver,
+      graphiql: true,
+    })
+  );
 });
 
 afterEach(async () => {
-  await mongoose.disconnect();
-  await mongoServer.stop();
+  await closeMongoDBConnection();
 });
 
 describe('Integration test', () => {
@@ -60,12 +68,7 @@ describe('Integration test', () => {
       }
     }`;
 
-    const res = await request(app)
-      .post('/graphql')
-      .send({ query })
-      .set('Content-Type', 'application/json')
-      .expect(200);
-
+    const res = await sendGraphQLRequest(query);
     const responseData = res.body.data.createTransaction;
 
     expect(responseData.amount).to.equal(1122);
@@ -94,11 +97,8 @@ describe('Integration test', () => {
       }
     }`;
 
-    await request(app)
-      .post('/graphql')
-      .send({ query })
-      .set('Content-Type', 'application/json')
-      .expect(400);
+    const res = await sendGraphQLRequest(query);
+    expect(res.status).to.equal(400);
   });
 
   it('should create a transaction with methodCode "Outgoing" when amount is negative', async () => {
@@ -119,12 +119,7 @@ describe('Integration test', () => {
       }
     }`;
 
-    const res = await request(app)
-      .post('/graphql')
-      .send({ query })
-      .set('Content-Type', 'application/json')
-      .expect(200);
-
+    const res = await sendGraphQLRequest(query);
     const responseData = res.body.data.createTransaction;
 
     expect(responseData.amount).to.equal(-32);
@@ -150,12 +145,7 @@ describe('Integration test', () => {
       }
     }`;
 
-    const createTransactionRes = await request(app)
-      .post('/graphql')
-      .send({ query: createTransactionQuery })
-      .set('Content-Type', 'application/json')
-      .expect(200);
-
+    const createTransactionRes = await sendGraphQLRequest(createTransactionQuery);
     const transactionId = createTransactionRes.body.data.createTransaction._id;
 
     const updateTransactionQuery = `mutation {
@@ -173,12 +163,7 @@ describe('Integration test', () => {
       }
     }`;
 
-    const updateRes = await request(app)
-      .post('/graphql')
-      .send({ query: updateTransactionQuery })
-      .set('Content-Type', 'application/json')
-      .expect(200);
-
+    const updateRes = await sendGraphQLRequest(updateTransactionQuery);
     const updateTransactionRes = updateRes.body.data.updateTransaction;
 
     expect(updateTransactionRes._id).to.equal(transactionId);
@@ -203,29 +188,18 @@ describe('Integration test', () => {
       }
     }`;
 
-    const createTransactionRes = await request(app)
-      .post('/graphql')
-      .send({ query: createTransactionQuery })
-      .set('Content-Type', 'application/json')
-      .expect(200);
-
+    const createTransactionRes = await sendGraphQLRequest(createTransactionQuery);
     const transactionId = createTransactionRes.body.data.createTransaction._id;
 
     const deleteTransactionQuery = `mutation {
       deleteTransaction(_id: "${transactionId}")
     }`;
 
-    const deleteRes = await request(app)
-      .post('/graphql')
-      .send({ query: deleteTransactionQuery })
-      .set('Content-Type', 'application/json')
-      .expect(200);
-
+    const deleteRes = await sendGraphQLRequest(deleteTransactionQuery);
     expect(deleteRes.body.data.deleteTransaction).to.be.true;
   });
 
   it('should query all transactions', async () => {
-
     const query = `mutation {
       createTransaction(transactionInputData: {
         date: "2001-12-25T23:15:30",
@@ -244,38 +218,26 @@ describe('Integration test', () => {
       }
     }`;
 
-    const res = await request(app)
-      .post('/graphql')
-      .send({ query })
-      .set('Content-Type', 'application/json')
-      .expect(200);
+    await sendGraphQLRequest(query);
 
+    const findAllTransactionsQuery = `query {
+      findAllTransactions {
+        _id
+        date
+        amount
+        status
+        counterpartyName
+        methodCode
+        note
+      }
+    }`;
 
-    const findAllTransactions = `query {
-        findAllTransactions {
-          _id
-          date
-          amount
-          status
-          counterpartyName
-          methodCode
-          note
-        }
-      }`;
-
-    const findAllTransactionsRes = await request(app)
-      .post('/graphql')
-      .send({ query: findAllTransactions })
-      .set('Content-Type', 'application/json')
-      .expect(200);
-
+    const findAllTransactionsRes = await sendGraphQLRequest(findAllTransactionsQuery);
     expect(findAllTransactionsRes.body.data.findAllTransactions).to.have.lengthOf(1);
-
   });
 
   it('should query transactions by method name', async () => {
-
-    const methodCode = 34 // ACH
+    const methodCode = 34; // ACH
 
     const query = `mutation {
       createTransaction(transactionInputData: {
@@ -295,40 +257,29 @@ describe('Integration test', () => {
       }
     }`;
 
-    const res = await request(app)
-      .post('/graphql')
-      .send({ query })
-      .set('Content-Type', 'application/json')
-      .expect(200);
+    await sendGraphQLRequest(query);
 
+    const findTransactionsByMethodNameQuery = `query {
+      findTransactionsByMethodName(methodName: "${methodCodes[methodCode]}") {
+        _id
+        date
+        amount
+        status
+        counterpartyName
+        methodCode
+        note
+      }
+    }`;
 
-    const findTransactionsByMethodName = `query {
-        findTransactionsByMethodName(methodName: "${methodCodes[methodCode]}") {
-          _id
-          date
-          amount
-          status
-          counterpartyName
-          methodCode
-          note
-        }
-      }`;
-
-    const findTransactionsByMethodNameRes = await request(app)
-      .post('/graphql')
-      .send({ query: findTransactionsByMethodName })
-      .set('Content-Type', 'application/json')
-      .expect(200);
-
+    const findTransactionsByMethodNameRes = await sendGraphQLRequest(findTransactionsByMethodNameQuery);
     const result = findTransactionsByMethodNameRes.body.data.findTransactionsByMethodName;
+
     expect(result).to.have.lengthOf(1);
     expect(result[0].methodCode).to.equal(methodCodes[methodCode]);
-
   });
 
   it('should get current account balance', async () => {
-
-    const methodCode = 34 // ACH
+    const methodCode = 34; // ACH
     const amount = 1133;
 
     const query = `mutation {
@@ -349,25 +300,15 @@ describe('Integration test', () => {
       }
     }`;
 
-    const res = await request(app)
-      .post('/graphql')
-      .send({ query })
-      .set('Content-Type', 'application/json')
-      .expect(200);
+    await sendGraphQLRequest(query);
 
+    const getCurrentAccountBalanceQuery = `query {
+      getCurrentAccountBalance
+    }`;
 
-    const getCurrentAccountBalance = `query {
-        getCurrentAccountBalance
-      }`;
-
-    const getCurrentAccountBalanceRes = await request(app)
-      .post('/graphql')
-      .send({ query: getCurrentAccountBalance })
-      .set('Content-Type', 'application/json')
-      .expect(200);
-
+    const getCurrentAccountBalanceRes = await sendGraphQLRequest(getCurrentAccountBalanceQuery);
     const result = getCurrentAccountBalanceRes.body.data.getCurrentAccountBalance;
-    expect(result).to.equal(amount);
 
+    expect(result).to.equal(amount);
   });
 });
