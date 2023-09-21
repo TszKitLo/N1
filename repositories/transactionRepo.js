@@ -9,6 +9,16 @@ class TransactionRepo {
         return createdTransaction;
     }
 
+    async findTransactionById(_id) {
+        const transaction = await Transaction.findById(_id);
+        return transaction;
+    }
+
+    async deleteTransaction(_id) {
+        await Transaction.findByIdAndRemove(_id);
+        return true;
+    }
+
 
 }
 

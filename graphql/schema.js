@@ -1,7 +1,7 @@
 const { buildSchema } = require('graphql');
 
 module.exports = buildSchema(`
-    type Transaction {
+type Transaction {
         _id: ID!
         date: String!
         amount: Float!
@@ -25,13 +25,21 @@ module.exports = buildSchema(`
         note: String
     }
 
+    input UpdateTransactionInputData {
+        _id: ID!
+        amount: Float
+        status: String
+        note: String
+    }
+
     type RootQuery {
 
     }
 
     type RootMutation {
         createTransaction(transactionInputData: TransactionInputData): Transaction!
-
+        updateTransaction(updateTransactionInputData: UpdateTransactionInputData): Transaction!
+        deleteTransaction(_id: ID!): Boolean
     }
 
     schema {

@@ -49,5 +49,58 @@ describe("TransactionService", () => {
     });
   });
 
+  describe("updateTransaction", () => {
+    it("should update a transaction", async () => {
+      // Arrange
+      const mockTransactionId = "123456";
+      const mockUpdatedData = {
+        amount: 1500,
+        status: "Posted",
+        note: "Updated transaction",
+      };
+
+      const mockExistingTransaction = {
+        _id: mockTransactionId,
+        amount: 1000,
+        status: "Pending",
+        note: "Test transaction",
+      };
+
+      transactionRepoMock.findTransactionById.resolves(mockExistingTransaction);
+      transactionRepoMock.saveTransaction.resolves({
+        ...mockExistingTransaction,
+        ...mockUpdatedData,
+      });
+
+      // Act
+      const updatedTransaction = await transactionService.updateTransaction(
+        mockTransactionId,
+        mockUpdatedData.amount,
+        mockUpdatedData.status,
+        mockUpdatedData.note
+      );
+
+      // Assert
+      expect(updatedTransaction).to.deep.equal({
+        ...mockExistingTransaction,
+        ...mockUpdatedData,
+      });
+    });
+  });
+
+  describe("deleteTransaction", () => {
+    it("should delete a transaction", async () => {
+      // Arrange
+      const mockTransactionId = "123456";
+
+      // Act
+      await transactionService.deleteTransaction(mockTransactionId);
+
+      // Assert
+      expect(
+        transactionRepoMock.deleteTransaction.calledOnceWith(mockTransactionId)
+      ).to.be.true;
+    });
+  });
   
 });

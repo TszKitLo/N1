@@ -33,6 +33,27 @@ class TransactionService {
 
     }
 
+    async updateTransaction(_id, amount, status, note) {
+        const transaction = await this.transactionRepo.findTransactionById(_id);
+        if (!transaction) {
+          const error = new Error('No transaction found!');
+          error.code = 404;
+          throw error;
+        }
+    
+        if(amount != null) transaction.amount = amount;
+        if(status != null) transaction.status = status;
+        if(note != null) transaction.note = note;
+    
+        const updatedTransaction = await this.transactionRepo.saveTransaction(transaction);
+
+        return updatedTransaction;
+    }
+
+    async deleteTransaction(_id) {
+        await this.transactionRepo.deleteTransaction(_id);
+        return true;
+    }
 
 }
 

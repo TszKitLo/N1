@@ -15,5 +15,22 @@ module.exports = {
       transactionInputData.note
     );
     return createdTransaction;
+  },
+
+  // Update transaction
+  updateTransaction: async function({updateTransactionInputData}) {
+    const updatedTransaction = transactionService.updateTransaction(
+      updateTransactionInputData._id, 
+      updateTransactionInputData.amount, 
+      updateTransactionInputData.status, 
+      updateTransactionInputData.note
+    );
+    return updatedTransaction;
+  },
+
+  // Delete transaction
+  deleteTransaction: async function({_id}) {
+    const isDeletedTransaction = transactionService.deleteTransaction(_id);
+    return isDeletedTransaction;
   }
 };

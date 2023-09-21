@@ -131,5 +131,98 @@ describe('Integration test', () => {
     expect(responseData.methodCode).to.equal("Outgoing");
   });
 
-  
+  it('should update a transaction', async () => {
+    const createTransactionQuery = `mutation {
+      createTransaction(transactionInputData: {
+        date: "2001-12-25T23:15:30",
+        amount: 1122,
+        methodCode: 34,
+        status: "Pending",
+        note: "Test"
+      }) {
+        _id
+        amount
+        date
+        status
+        counterpartyName
+        methodCode
+        note
+      }
+    }`;
+
+    const createTransactionRes = await request(app)
+      .post('/graphql')
+      .send({ query: createTransactionQuery })
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const transactionId = createTransactionRes.body.data.createTransaction._id;
+
+    const updateTransactionQuery = `mutation {
+      updateTransaction(updateTransactionInputData: {
+        _id: "${transactionId}",
+        note: "UpdateTest"
+      }) {
+        _id
+        amount
+        date
+        status
+        counterpartyName
+        methodCode
+        note
+      }
+    }`;
+
+    const updateRes = await request(app)
+      .post('/graphql')
+      .send({ query: updateTransactionQuery })
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const updateTransactionRes = updateRes.body.data.updateTransaction;
+
+    expect(updateTransactionRes._id).to.equal(transactionId);
+    expect(updateTransactionRes.amount).to.equal(1122);
+    expect(updateTransactionRes.date).to.equal("1009340130000");
+    expect(updateTransactionRes.status).to.equal("Pending");
+    expect(updateTransactionRes.counterpartyName).to.be.null;
+    expect(updateTransactionRes.methodCode).to.equal("ACH");
+    expect(updateTransactionRes.note).to.equal("UpdateTest");
+  });
+
+  it('should delete a transaction', async () => {
+    const createTransactionQuery = `mutation {
+      createTransaction(transactionInputData: {
+        date: "2001-12-25T23:15:30",
+        amount: 1122,
+        methodCode: 34,
+        status: "Pending",
+        note: "Test"
+      }) {
+        _id
+      }
+    }`;
+
+    const createTransactionRes = await request(app)
+      .post('/graphql')
+      .send({ query: createTransactionQuery })
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const transactionId = createTransactionRes.body.data.createTransaction._id;
+
+    const deleteTransactionQuery = `mutation {
+      deleteTransaction(_id: "${transactionId}")
+    }`;
+
+    const deleteRes = await request(app)
+      .post('/graphql')
+      .send({ query: deleteTransactionQuery })
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    expect(deleteRes.body.data.deleteTransaction).to.be.true;
+  });
+
+
 });
