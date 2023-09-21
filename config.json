@@ -1,0 +1,9 @@
+{
+    "server": {
+      "port": 8080,
+      "host": "localhost"
+    },
+    "database": {
+      "url": "mongodb+srv://lotszkitkeith_rw:6Nc9pB6OpIq8EVj9@cluster0.2tadlls.mongodb.net/?retryWrites=true&w=majority"
+    }
+  }
