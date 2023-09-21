@@ -32,5 +32,28 @@ module.exports = {
   deleteTransaction: async function({_id}) {
     const isDeletedTransaction = transactionService.deleteTransaction(_id);
     return isDeletedTransaction;
+  },
+
+  // Get all transactions
+  findAllTransactions: async function() {
+    const transactions = await transactionService.findAllTransactions();
+    return transactions;
+  },
+
+  // Get transactions by methodName
+  findTransactionsByMethodName: async function({methodName}) {
+    const transactions = await transactionService.findTransactionsByMethodName(methodName);
+    return transactions;
+  },
+
+  // Get cuurent account balance
+  getCurrentAccountBalance: async function(){
+    const sum = await transactionService.getSumOfAllTransactions();
+    return sum;
+  },
+
+  // Get methodCode mapping
+  getMethodCodeMapping: async function(){
+    return methodCodesDTO;
   }
 };

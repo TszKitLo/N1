@@ -19,7 +19,30 @@ class TransactionRepo {
         return true;
     }
 
+    async findAllTransactions() {
+        const transactions = await Transaction.find({});
+        return transactions;
+    }
 
+    async findTransactionsByMethodName(methodName) {
+        const transactions = await Transaction.find({methodCode: methodName});
+        return transactions;
+    }
+
+    // Calculate the sum of the 'amount' field
+    async sumOfAllTransactions(){
+            
+        const result = await Transaction.aggregate([
+            {
+                $group: {
+                    _id: null, // Group all documents into a single group
+                    totalAmount: { $sum: '$amount' }, // Calculate the sum of the 'amount' field
+                },
+            },
+        ]);
+
+        return (result.length > 0) ? result[0].totalAmount : 0;
+    }
 }
 
 

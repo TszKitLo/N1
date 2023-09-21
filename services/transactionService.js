@@ -55,6 +55,20 @@ class TransactionService {
         return true;
     }
 
+    async findAllTransactions() {
+        const transactions = await this.transactionRepo.findAllTransactions();
+        return transactions;
+    }
+
+    async findTransactionsByMethodName(methodName) {
+        const transactions = await this.transactionRepo.findTransactionsByMethodName(methodName);
+        return transactions;
+    }
+
+    async getSumOfAllTransactions(){
+        const sum = await this.transactionRepo.sumOfAllTransactions()
+        return sum;
+    }
 }
 
 

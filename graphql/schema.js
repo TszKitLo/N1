@@ -1,7 +1,7 @@
 const { buildSchema } = require('graphql');
 
 module.exports = buildSchema(`
-type Transaction {
+    type Transaction {
         _id: ID!
         date: String!
         amount: Float!
@@ -33,7 +33,10 @@ type Transaction {
     }
 
     type RootQuery {
-
+        findAllTransactions: [Transaction]!
+        findTransactionsByMethodName(methodName: String!): [Transaction]!
+        getCurrentAccountBalance: Float
+        getMethodCodeMapping: [MethodCode!]!
     }
 
     type RootMutation {

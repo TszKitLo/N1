@@ -102,5 +102,59 @@ describe("TransactionService", () => {
       ).to.be.true;
     });
   });
-  
+
+  describe("findAllTransactions", () => {
+    it("should find all transactions", async () => {
+      // Arrange
+      const mockTransactions = [
+        { _id: "1", amount: 1000, status: "Pending" },
+        { _id: "2", amount: 1500, status: "Posted" },
+      ];
+
+      transactionRepoMock.findAllTransactions.resolves(mockTransactions);
+
+      // Act
+      const transactions = await transactionService.findAllTransactions();
+
+      // Assert
+      expect(transactions).to.deep.equal(mockTransactions);
+    });
+  });
+
+  describe("findTransactionsByMethodName", () => {
+    it("should find transactions by method name", async () => {
+      // Arrange
+      const methodName = "ACH";
+      const mockTransactions = [
+        { _id: "1", amount: 1000, status: "Pending", methodCode: "ACH" },
+        { _id: "2", amount: 1500, status: "Posted", methodCode: "ACH" },
+      ];
+
+      transactionRepoMock.findTransactionsByMethodName.resolves(
+        mockTransactions
+      );
+
+      // Act
+      const transactions =
+        await transactionService.findTransactionsByMethodName(methodName);
+
+      // Assert
+      expect(transactions).to.deep.equal(mockTransactions);
+    });
+  });
+
+  describe("getSumOfAllTransactions", () => {
+    it("should calculate the sum of all transactions", async () => {
+      // Arrange
+      const mockSum = 2500;
+
+      transactionRepoMock.sumOfAllTransactions.resolves(mockSum);
+
+      // Act
+      const sum = await transactionService.getSumOfAllTransactions();
+
+      // Assert
+      expect(sum).to.equal(mockSum);
+    });
+  });
 });

@@ -224,5 +224,150 @@ describe('Integration test', () => {
     expect(deleteRes.body.data.deleteTransaction).to.be.true;
   });
 
+  it('should query all transactions', async () => {
 
+    const query = `mutation {
+      createTransaction(transactionInputData: {
+        date: "2001-12-25T23:15:30",
+        amount: 1122,
+        methodCode: 34,
+        status: "Pending",
+        note: "Test"
+      }) {
+        _id
+        amount
+        date
+        status
+        counterpartyName
+        methodCode
+        note
+      }
+    }`;
+
+    const res = await request(app)
+      .post('/graphql')
+      .send({ query })
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+
+    const findAllTransactions = `query {
+        findAllTransactions {
+          _id
+          date
+          amount
+          status
+          counterpartyName
+          methodCode
+          note
+        }
+      }`;
+
+    const findAllTransactionsRes = await request(app)
+      .post('/graphql')
+      .send({ query: findAllTransactions })
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    expect(findAllTransactionsRes.body.data.findAllTransactions).to.have.lengthOf(1);
+
+  });
+
+  it('should query transactions by method name', async () => {
+
+    const methodCode = 34 // ACH
+
+    const query = `mutation {
+      createTransaction(transactionInputData: {
+        date: "2001-12-25T23:15:30",
+        amount: 1122,
+        methodCode: ${methodCode},
+        status: "Pending",
+        note: "Test"
+      }) {
+        _id
+        amount
+        date
+        status
+        counterpartyName
+        methodCode
+        note
+      }
+    }`;
+
+    const res = await request(app)
+      .post('/graphql')
+      .send({ query })
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+
+    const findTransactionsByMethodName = `query {
+        findTransactionsByMethodName(methodName: "${methodCodes[methodCode]}") {
+          _id
+          date
+          amount
+          status
+          counterpartyName
+          methodCode
+          note
+        }
+      }`;
+
+    const findTransactionsByMethodNameRes = await request(app)
+      .post('/graphql')
+      .send({ query: findTransactionsByMethodName })
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const result = findTransactionsByMethodNameRes.body.data.findTransactionsByMethodName;
+    expect(result).to.have.lengthOf(1);
+    expect(result[0].methodCode).to.equal(methodCodes[methodCode]);
+
+  });
+
+  it('should get current account balance', async () => {
+
+    const methodCode = 34 // ACH
+    const amount = 1133;
+
+    const query = `mutation {
+      createTransaction(transactionInputData: {
+        date: "2001-12-25T23:15:30",
+        amount: ${amount},
+        methodCode: ${methodCode},
+        status: "Pending",
+        note: "Test"
+      }) {
+        _id
+        amount
+        date
+        status
+        counterpartyName
+        methodCode
+        note
+      }
+    }`;
+
+    const res = await request(app)
+      .post('/graphql')
+      .send({ query })
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+
+    const getCurrentAccountBalance = `query {
+        getCurrentAccountBalance
+      }`;
+
+    const getCurrentAccountBalanceRes = await request(app)
+      .post('/graphql')
+      .send({ query: getCurrentAccountBalance })
+      .set('Content-Type', 'application/json')
+      .expect(200);
+
+    const result = getCurrentAccountBalanceRes.body.data.getCurrentAccountBalance;
+    expect(result).to.equal(amount);
+
+  });
 });
